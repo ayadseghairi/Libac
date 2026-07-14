@@ -10,7 +10,8 @@ const distDir = path.join(rootDir, 'dist');
 const assetsDir = path.join(rootDir, 'assets');
 const configPath = path.join(rootDir, 'config', 'site.json');
 const siteConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const basePath = process.env.BASE_PATH || siteConfig.basePath || '/Libac/';
+const basePath = process.env.BASE_PATH || siteConfig.basePath || '/';
+const customDomain = siteConfig.customDomain || '';
 
 const sectionMeta = {
   specialites: { label: 'تخصص', plural: 'التخصصات', folder: 'specialites' },
@@ -334,7 +335,17 @@ function render404Page(items) {
     slug: '404',
     pageType: '404',
     contentItems: items,
-    bodyHtml: '<p>عذرًا، الصفحة التي تبحث عنها غير موجودة أو تم نقلها. عد إلى الصفحة الرئيسية أو استخدم البحث.</p>',
+    bodyHtml: `
+      <section class="not-found-card">
+        <div class="not-found-icon"><i class='bx bx-error-circle'></i></div>
+        <h2>عذرًا، هذه الصفحة غير موجودة</h2>
+        <p>قد تكون الصفحة التي تبحث عنها أُزيلت أو تم تغيير عنوانها. يمكنك العودة إلى الصفحة الرئيسية أو استخدام البحث للعثور على ما تريده.</p>
+        <div class="not-found-actions">
+          <a class="btn-primary" href="index.html">العودة إلى الرئيسية</a>
+          <a class="btn-secondary" href="specialites/index.html">استعرض التخصصات</a>
+        </div>
+      </section>
+    `,
     outputRelativeFile: '404.html'
   });
 }
@@ -421,6 +432,25 @@ function buildContentItems() {
   fs.writeFileSync(path.join(distDir, '404.html'), render404Page(items), 'utf8');
   fs.writeFileSync(path.join(distDir, 'search-index.json'), JSON.stringify(searchIndex, null, 2), 'utf8');
   fs.writeFileSync(path.join(distDir, '.nojekyll'), '', 'utf8');
+  if (customDomain) {
+    fs.writeFileSync(path.join(distDir, 'CNAME'), customDomain, 'utf8');
+  }
+
+  const redirectPage = `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="refresh" content="0; url=../" />
+  <link rel="canonical" href="../" />
+  <title>Libac</title>
+</head>
+<body>
+  <p>يتم تحويلك إلى الصفحة الرئيسية...</p>
+  <script>window.location.replace('../');</script>
+</body>
+</html>`;
+  ensureDir(path.join(distDir, 'Libac'));
+  fs.writeFileSync(path.join(distDir, 'Libac', 'index.html'), redirectPage, 'utf8');
 
   return { items, searchIndex };
 }
