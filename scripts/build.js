@@ -10,8 +10,24 @@ const distDir = path.join(rootDir, 'dist');
 const assetsDir = path.join(rootDir, 'assets');
 const configPath = path.join(rootDir, 'config', 'site.json');
 const siteConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const basePath = process.env.BASE_PATH || siteConfig.basePath || '/';
-const customDomain = siteConfig.customDomain || '';
+
+function normalizeBasePath(value) {
+  const normalized = String(value || '/').trim();
+  if (!normalized || normalized === '/') return '/';
+  const withoutTrailingSlash = normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
+  return withoutTrailingSlash.startsWith('/') ? withoutTrailingSlash : `/${withoutTrailingSlash}`;
+}
+
+function siteUrl(pathValue = '') {
+  const normalizedPath = String(pathValue || '').trim();
+  if (/^(https?:|mailto:|#)/.test(normalizedPath)) return normalizedPath;
+  const cleanPath = normalizedPath.replace(/^\/+/, '');
+  if (!cleanPath) return basePath === '/' ? '/' : `${basePath}/`;
+  return `${basePath}/${cleanPath}`.replace(/\/+/g, '/');
+}
+
+const basePath = normalizeBasePath(process.env.BASE_PATH || siteConfig.basePath || '/');
+const customDomain = String(siteConfig.customDomain || '').trim();
 
 const sectionMeta = {
   specialites: { label: 'تخصص', plural: 'التخصصات', folder: 'specialites' },
@@ -88,6 +104,9 @@ function buildRelativeLink(fromFile, toFile) {
 }
 
 function makePagePath(section, slug) {
+  if (section === 'index') return '/';
+  const normalizedSlug = String(slug || '').trim();
+  if (!normalizedSlug || normalizedSlug === section) return `${section}/`;
   return `${section}/${slug}/`;
 }
 
@@ -116,15 +135,16 @@ function relativePath(fromOutputFile, toOutputFile) {
 }
 
 function renderPage({ title, description, updatedAt, section, slug, bodyHtml, navItems, pageType, contentItems, pageTitle, outputRelativeFile }) {
-  const pageUrl = `${basePath}${makePagePath(section, slug)}`;
+  const pageUrl = siteUrl(makePagePath(section, slug));
   const canonical = pageUrl;
-  const stylesheetHref = relativePath(outputRelativeFile, 'assets/style.css');
-  const appScriptSrc = relativePath(outputRelativeFile, 'assets/app.js');
-  const siteRootHref = relativePath(outputRelativeFile, 'index.html').replace(/index\.html$/, '') || './';
-  const homeHref = siteRootHref;
-  const specialitesHref = relativePath(outputRelativeFile, 'specialites/index.html');
-  const universitesHref = relativePath(outputRelativeFile, 'universites/index.html');
-  const guidesHref = relativePath(outputRelativeFile, 'guides/index.html');
+  const stylesheetHref = siteUrl('assets/style.css');
+  const appScriptSrc = siteUrl('assets/app.js');
+  const logoSrc = siteUrl('assets/logo.jpg');
+  const homeHref = siteUrl('');
+  const siteRootHref = basePath === '/' ? '/' : `${basePath}/`;
+  const specialitesHref = siteUrl('specialites/index.html');
+  const universitesHref = siteUrl('universites/index.html');
+  const guidesHref = siteUrl('guides/index.html');
   return `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -147,7 +167,7 @@ function renderPage({ title, description, updatedAt, section, slug, bodyHtml, na
 <body>
   <header class="site-header">
     <a class="brand" href="${homeHref}">
-      <img class="brand-logo" src="${relativePath(outputRelativeFile, 'assets/logo.jpg')}" alt="شعار Libac" />
+      <img class="brand-logo" src="${logoSrc}" alt="شعار Libac" />
       <span>
         <strong>Libac</strong>
         <small>دليل التوجيه الجامعي</small>
@@ -175,7 +195,7 @@ function renderPage({ title, description, updatedAt, section, slug, bodyHtml, na
       <div class="sidebar-section">
         <h3>أحدث المقالات</h3>
         <ul>
-          ${contentItems.slice(0, 6).map((item) => `<li><a href="${relativePath(outputRelativeFile, item.outputRelativeFile)}">${escapeHtml(item.title)}</a></li>`).join('')}
+          ${contentItems.slice(0, 6).map((item) => `<li><a href="${siteUrl(item.outputRelativeFile.replace(/\/index\.html$/, '/'))}">${escapeHtml(item.title)}</a></li>`).join('')}
         </ul>
       </div>
       <div class="sidebar-section">
@@ -212,7 +232,7 @@ function renderSectionPage(section, items, outputRelativeFile) {
   const sectionMetaInfo = sectionMeta[section];
   const cards = items.map((item) => `
     <article class="card">
-      <h3><a href="${relativePath(outputRelativeFile, item.outputRelativeFile)}">${escapeHtml(item.title)}</a></h3>
+      <h3><a href="${siteUrl(item.outputRelativeFile.replace(/\/index\.html$/, '/'))}">${escapeHtml(item.title)}</a></h3>
       <p>${escapeHtml(item.description)}</p>
     </article>`).join('');
 
@@ -240,9 +260,9 @@ function renderHomePage(items) {
   const guides = items.filter((item) => item.section === 'guides');
 
   const cards = [
-    { title: 'التخصصات', count: specialites.length, href: `${basePath}specialites/`, description: 'اكتشف التخصصات المناسبة لشعب البكالوريا والآفاق الوظيفية.' },
-    { title: 'الجامعات', count: universites.length, href: `${basePath}universites/`, description: 'اعرف الجامعة المناسبة لمدينةك ومجالك.' },
-    { title: 'الأدلة', count: guides.length, href: `${basePath}guides/`, description: 'تابع خطوات التسجيل والانتقال إلى الحياة الجامعية بثقة.' }
+    { title: 'التخصصات', count: specialites.length, href: siteUrl('specialites/'), description: 'اكتشف التخصصات المناسبة لشعب البكالوريا والآفاق الوظيفية.' },
+    { title: 'الجامعات', count: universites.length, href: siteUrl('universites/'), description: 'اعرف الجامعة المناسبة لمدينةك ومجالك.' },
+    { title: 'الأدلة', count: guides.length, href: siteUrl('guides/'), description: 'تابع خطوات التسجيل والانتقال إلى الحياة الجامعية بثقة.' }
   ];
 
   const specialiteCards = specialites.map((item) => {
@@ -252,7 +272,7 @@ function renderHomePage(items) {
     const filterValue = filters[0] || '';
     return `
     <article class="card" data-filter="${escapeHtml(filterValue)}">
-      <h3><a href="${relativePath('index.html', item.outputRelativeFile)}">${escapeHtml(item.title)}</a></h3>
+      <h3><a href="${siteUrl(item.outputRelativeFile.replace(/\/index\.html$/, '/'))}">${escapeHtml(item.title)}</a></h3>
       <p>${escapeHtml(item.description)}</p>
       <small>${escapeHtml(item.frontMatter.domaine || '')}</small>
     </article>`;
@@ -260,14 +280,14 @@ function renderHomePage(items) {
 
   const universityCards = universites.map((item) => `
     <article class="card" data-filter="${escapeHtml(item.frontMatter['الجهة'] || '')}">
-      <h3><a href="${relativePath('index.html', item.outputRelativeFile)}">${escapeHtml(item.title)}</a></h3>
+      <h3><a href="${siteUrl(item.outputRelativeFile.replace(/\/index\.html$/, '/'))}">${escapeHtml(item.title)}</a></h3>
       <p>${escapeHtml(item.description)}</p>
       <small>${escapeHtml(item.frontMatter['الجهة'] || '')}</small>
     </article>`).join('');
 
   const guideCards = guides.map((item) => `
     <article class="card">
-      <h3><a href="${relativePath('index.html', item.outputRelativeFile)}">${escapeHtml(item.title)}</a></h3>
+      <h3><a href="${siteUrl(item.outputRelativeFile.replace(/\/index\.html$/, '/'))}">${escapeHtml(item.title)}</a></h3>
       <p>${escapeHtml(item.description)}</p>
     </article>`).join('');
 
@@ -341,8 +361,8 @@ function render404Page(items) {
         <h2>عذرًا، هذه الصفحة غير موجودة</h2>
         <p>قد تكون الصفحة التي تبحث عنها أُزيلت أو تم تغيير عنوانها. يمكنك العودة إلى الصفحة الرئيسية أو استخدام البحث للعثور على ما تريده.</p>
         <div class="not-found-actions">
-          <a class="btn-primary" href="index.html">العودة إلى الرئيسية</a>
-          <a class="btn-secondary" href="specialites/index.html">استعرض التخصصات</a>
+          <a class="btn-primary" href="${siteUrl('')}">العودة إلى الرئيسية</a>
+          <a class="btn-secondary" href="${siteUrl('specialites/index.html')}">استعرض التخصصات</a>
         </div>
       </section>
     `,
@@ -395,7 +415,7 @@ function buildContentItems() {
       slug,
       type: sectionMeta[section].label,
       description,
-      url: `${basePath}${pagePath}`,
+      url: siteUrl(pagePath),
       filters: { ...frontMatter }
     });
   }
@@ -440,13 +460,13 @@ function buildContentItems() {
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="refresh" content="0; url=../" />
-  <link rel="canonical" href="../" />
+  <meta http-equiv="refresh" content="0; url=${siteUrl('')}" />
+  <link rel="canonical" href="${siteUrl('')}" />
   <title>Libac</title>
 </head>
 <body>
   <p>يتم تحويلك إلى الصفحة الرئيسية...</p>
-  <script>window.location.replace('../');</script>
+  <script>window.location.replace(${JSON.stringify(siteUrl(''))});</script>
 </body>
 </html>`;
   ensureDir(path.join(distDir, 'Libac'));
@@ -466,10 +486,7 @@ function rewriteLinks(markdown, currentItem, contentBySource) {
       const resolvedTarget = path.resolve(path.dirname(currentItem.sourceFile), cleanedTarget);
       const targetItem = contentBySource.get(resolvedTarget);
       if (targetItem) {
-        const fromFile = path.join(path.dirname(currentItem.outputRelativeFile), 'index.html');
-        const toFile = targetItem.outputRelativeFile;
-        const relativeUrl = path.posix.relative(path.dirname(fromFile), toFile).replace(/\\/g, '/');
-        const cleanedUrl = relativeUrl.endsWith('/index.html') ? relativeUrl.replace(/\/index\.html$/, '/') : relativeUrl;
+        const cleanedUrl = siteUrl(targetItem.outputRelativeFile.replace(/\/index\.html$/, '/'));
         return `[${label}](${cleanedUrl})`;
       }
     }
@@ -482,12 +499,12 @@ function buildRelatedLinks(item, items) {
   const related = [];
   if (item.section === 'specialites') {
     const targets = items.filter((candidate) => candidate.section === 'universites');
-    related.push(`<h3>الجامعات التي تدرس هذا التخصص</h3><ul>${targets.slice(0, 6).map((candidate) => `<li><a href="${basePath}${makePagePath(candidate.section, candidate.slug)}">${escapeHtml(candidate.title)}</a></li>`).join('')}</ul>`);
+    related.push(`<h3>الجامعات التي تدرس هذا التخصص</h3><ul>${targets.slice(0, 6).map((candidate) => `<li><a href="${siteUrl(makePagePath(candidate.section, candidate.slug))}">${escapeHtml(candidate.title)}</a></li>`).join('')}</ul>`);
   }
 
   if (item.section === 'universites') {
     const targets = items.filter((candidate) => candidate.section === 'specialites');
-    related.push(`<h3>التخصصات المتاحة في هذه الجامعة</h3><ul>${targets.slice(0, 6).map((candidate) => `<li><a href="${basePath}${makePagePath(candidate.section, candidate.slug)}">${escapeHtml(candidate.title)}</a></li>`).join('')}</ul>`);
+    related.push(`<h3>التخصصات المتاحة في هذه الجامعة</h3><ul>${targets.slice(0, 6).map((candidate) => `<li><a href="${siteUrl(makePagePath(candidate.section, candidate.slug))}">${escapeHtml(candidate.title)}</a></li>`).join('')}</ul>`);
   }
 
   return related.length ? related.join('') : '';

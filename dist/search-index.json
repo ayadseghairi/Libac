@@ -4,7 +4,7 @@
     "slug": "nasaeh-etudiants-jodod",
     "type": "دليل",
     "description": "قبل التسجيل: كيف تختار التخصص الصح؟",
-    "url": "/guides/nasaeh-etudiants-jodod/",
+    "url": "/Libac/guides/nasaeh-etudiants-jodod/",
     "filters": {
       "title": "نصائح للطلبة الجدد الناجحين في البكالوريا",
       "slug": "nasaeh-etudiants-jodod",
@@ -17,7 +17,7 @@
     "slug": "informatique",
     "type": "تخصص",
     "description": "نظرة عامة عن التخصص",
-    "url": "/specialites/informatique/",
+    "url": "/Libac/specialites/informatique/",
     "filters": {
       "title": "الإعلام الآلي (علوم وتكنولوجيا - الإعلام الآلي)",
       "slug": "informatique",
@@ -41,7 +41,7 @@
     "slug": "univ-khenchela",
     "type": "جامعة",
     "description": "جامعة جزائرية معروفة ببرامجها العلمية والتقنية وتقديمها لتخصص الإعلام الآلي والعلوم الأساسية.",
-    "url": "/universites/univ-khenchela/",
+    "url": "/Libac/universites/univ-khenchela/",
     "filters": {
       "title": "جامعة عباس لغرور - خنشلة",
       "slug": "univ-khenchela",
