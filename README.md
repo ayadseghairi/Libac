@@ -36,4 +36,7 @@ npm run build
 ## النشر التلقائي
 
 - تأكد من أن GitHub Actions مفعّل.
-- من إعدادات المستودع اختر فرع gh-pages كمصدر لصفحات GitHub Pages.
+- افتح Settings → Pages داخل المستودع.
+- اختر Source: GitHub Actions.
+- إذا ظهر لك حقل Custom domain، أدخله كما يلي: ayadseghiri.dev
+- بعد أول push ناجح، سيستغرق النشر بضع دقائق حتى يتوفر الموقع.
